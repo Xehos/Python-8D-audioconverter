@@ -29,7 +29,7 @@ def loadfile(inputfile):
     try: 
         song = AudioSegment.from_mp3(inputfile)
     except:
-        song = AudioSegment.from_mp3("input\\ihope.mp3")#.low_pass_filter(bottomval)
+        song = AudioSegment.from_mp3("input\\default.mp3")#.low_pass_filter(bottomval)
     print(song)
  
 
