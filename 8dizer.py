@@ -1,14 +1,3 @@
-'''
-8D Sound converter in python using pydub
-Developed by Adam Huml 2021 
-Ideal values:
-
-Normal HTRF, normal PAN - PAN = 50, HTRF = Y
-No HTRF, normal PAN - PAN = 50, HTRF = N  
-Normal HTRF + Strong PAN - PAN = 75, HTRF = Y
-No HTRF + Strong PAN - PAN = 75, HTRF = N
-
-'''
 from pydub import AudioSegment
 from pydub.playback import play
 from pydub import effects
@@ -23,20 +12,26 @@ import multiprocessing
 #AudioSegment.converter = "C:\\Program Files (x86)\\ffmpeg\\bin"
 
 
+
+
 def loadfile(inputfile):
     global song
     
     try: 
         song = AudioSegment.from_mp3(inputfile)
     except:
-        song = AudioSegment.from_mp3("input\\default.mp3")#.low_pass_filter(bottomval)
+        song = AudioSegment.from_mp3("input\\ihope.mp3")#.low_pass_filter(bottomval)
     print(song)
  
 
 z=0
+#Play panned left audio
 pole = []
-def threadone(m,bottombool):
+def threadone(m,bottombool,output):
     global song,pole,z
+    
+    #song[0:5000] = song.pan(0.5)[0:5000]
+    #song[5000:10000] = song.pan(-0.5)[5000:1000]
     ranges = int(song.duration_seconds)
     pan = 0
     up = False
@@ -51,7 +46,7 @@ def threadone(m,bottombool):
         y = x*100
         z = (x*100)-100
         print("****")
-        print("Iteration" + str(x))
+        print("Opakování" + str(x))
         print("Z=" + str(z))
         print("Y=" + str(y))
         print("Bottom="+str(bottom))
@@ -61,14 +56,18 @@ def threadone(m,bottombool):
             if(bottom!=True): # and song[ z : y].dBFS*-1>16
                 pole.append(song[ z : y].pan(pan)+(bottomval/2))
             else:
-                if (song[z:y].dBFS*-1>13): #Can be changed to improve 8D performance in some cases
+                if (song[z:y].dBFS*-1>13):
                     pole.append(song[ z : y].pan(pan)-bottomval)
                 else:
                     pole.append(song[ z : y].pan(pan)-bottomval)
         else: 
             pole.append(song[ z : y].pan(pan))
-       
-             
+        
+          
+           
+   
+            
+        
         print("Power="+str(pole[x-1].dBFS*-1))
         
         timestamp=float(len(pole)/10)
@@ -76,7 +75,7 @@ def threadone(m,bottombool):
         if(timestamp>=60):
             minuta=int(timestamp/60)
             timestamp="{:.2f}".format(timestamp-minuta*60)
-        print("Time="+str(minuta)+":"+str(timestamp))
+        print("Čas="+str(minuta)+":"+str(timestamp))
         
         
         print("****")
@@ -110,74 +109,136 @@ def threadone(m,bottombool):
         if (bottombool==True):
             
             if (bottomup ==True):
-                bottomval+=0.125 #0.125
+                bottomval+=0.125
                    
             
             if (bottomdown ==True):
-                bottomval-=0.125 #0.125
+                bottomval-=0.125
         
+                
                 
             if (bottomval<0):
                 bottomup=True
                 bottomdown=False
            
-            elif(bottomval>=4): #4
+            elif(bottomval>=3):
                 bottomdown = True
                 bottomup = False
         
         
     
-    song = sum(pole) #.normalize() can normalize entire song (not recommended while using the HTRF bottom effect)
+    #pole.append(song[2000:15000].pan(0.5))
+    
+    song = sum(pole) #.normalize()
     
     
     
     
-    print("Parts count: " + str(len(pole)))
+    print("Částí: " + str(len(pole)))
     
     
-    
+    outputstr = output 
     try:
-        song.export("output\\export.mp3", format="mp3")
-        print("Export completed successfully")
+        song.export(outputstr, format="mp3")
+        print("Export byl úspěšný")
     except:
-        print("Export failed!")
+        print("Export selhal")
     
 
 def threadtwo():
     pass
   
 def main(argv):
+    print(argv)
     inputfile = ""
     try:
-        opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+        opts, args = getopt.getopt(argv,"hi:o:",["i=","o=","s=","pan=","htrf="])
 
     except getopt.GetoptError:
-        print ('8dizer.py -i <inputfile>')
-        sys.exit(2)
+        print ('test.py -i <inputfile> -o <outputfile>')
+        #sys.exit(2)
+        pass
         inputfile = ""
-    for opt, arg in opts:
+    inputfile = ""
+    outputfile = ""
+    #for opt, arg in opts:
         
-        if opt in ("-i", "--ifile"):
-            inputfile = arg
-        else:
-            inputfile = ""
+     #   if opt in ("-i", "--ifile"):
+            #inputfile = arg
+      #  elif opt in ("-o", "--ofile"):
+         #   outputfile = arg
+        #elif opt in ("-s", "--silent"):
+        #    silent = arg
+        #elif opt in ("-p", "--pan"):
+        #    pan = arg
+        #elif opt in ("-h", "--htrf-bottom"):
+        #    temp = arg
             
+        
+    try:
+        argv[1]
+    except:
+        pass
+    else:
+        inputfile = argv[1]
+    try:
+        argv[3]
+    except:
+        pass
+    else:
+        outputfile = argv[3]
+    try:
+        argv[5]
+    except:
+        pass
+    else:
+        pan = int(argv[5])/100
+    try:
+        argv[6]
+    except:
+        pass
+    else:
+        temp = True
+    try:
+        argv[7]
+    except:
+        pass
+    else:
+        silent = True
+        
     loadfile(inputfile)
-    
-    print("Do you really want to convert the Audio file to 8D? [y/n]")
-    stop = False  
-    i=str(input())
+    print("Inputfile =" + inputfile)
+    print("Outputfile=" + outputfile)
+    try:
+        silent
+    except:
+        print("Opravdu chcete převést soubor na 8D? [y/n]")
+        stop = False  
+        i=str(input())
+    else:
+        i = "y"
     if(i == "y"):
-        print("|ABS| max / min range PAN (0..100)")
-        i=(float(input()) / 100)
-        print("|BOOL| HTRF (bottom effect)? [y]/[n]")
-        i2=(input())
+        try:
+            pan
+        except:
+            print("|ABS| max / min rozsahu PAN (0..100)")
+            i=(float(input()) / 100)
+        else:
+            i = pan 
+        try:
+            temp
+        except:
+            print("|BOOL| HTRF (bottom effect)? [y]/[n]")
+            i2=(input())
+        else:
+            i2 = temp 
+        
         
         if (i2=="y"or i2=="Y"):
             temp=True
         else:
             temp=False
-        t = threading.Thread(target=threadone, args=(i,temp,))
+        t = threading.Thread(target=threadone, args=(i,temp,outputfile,))
         
         
         t.start()
@@ -187,6 +248,9 @@ def main(argv):
 if __name__ == "__main__":
    main(sys.argv[1:])
 
-#t2 = threading.Thread(target=threadtwo(), args=(1,))  place for other threads (for GUI and others)
+
+
+
+#t2 = threading.Thread(target=threadtwo(), args=(1,))
 #t2.start()
 
